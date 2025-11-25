@@ -104,8 +104,9 @@ def rival_battle(starter_pokemon):
         print("1 = Leafage | 2 = Scratch | 3 = Tail Whip")
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
-    move1 = input("What move would you like to use? ")
 
+    print("Move 1/4")
+    move1 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move1 == "1" and opponent_defense_lower == 0:
         l1_rival_starter_pokemon_HP -= 12
         print (f"Rival {rival_starter_pokemon} HP: {l1_rival_starter_pokemon_HP}")
@@ -201,6 +202,7 @@ def rival_battle(starter_pokemon):
 
     print("-"*100)
 
+    print("Move 2/4")
     move2 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move2 == "1" and opponent_defense_lower == 1:
         l1_rival_starter_pokemon_HP -= 17
@@ -323,6 +325,7 @@ def rival_battle(starter_pokemon):
 
     print("-"*100)
 
+    print("Move 3/4")
     move3 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move3 == "1" and opponent_defense_lower == 0:
         l1_rival_starter_pokemon_HP -= 12
@@ -489,6 +492,7 @@ def rival_battle(starter_pokemon):
 
     print("-"*100)
 
+    print("Move 4/4")
     move4 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move4 == "1" and opponent_defense_lower == 0:
         l1_rival_starter_pokemon_HP -= 12
@@ -673,6 +677,7 @@ def scyther_encounter(starter_pokemon):
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
 
+    print("Move 1/7")
     move1 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move1 == "1" and opponent_defense_lower == 0:
         scyther_HP -= 12
@@ -755,6 +760,7 @@ def scyther_encounter(starter_pokemon):
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
 
+    print("Move 2/7")
     move2 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move2 == "1" and opponent_defense_lower == 0:
         scyther_HP -= 12
@@ -869,6 +875,7 @@ def scyther_encounter(starter_pokemon):
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
 
+    print("Move 3/7")
     move3 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move3 == "1" and opponent_defense_lower == 0:
         scyther_HP -= 12
@@ -1010,6 +1017,7 @@ def scyther_encounter(starter_pokemon):
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
 
+    print("Move 4/7")
     move4 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move4 == "1" and opponent_defense_lower == 0:
         scyther_HP -= 12
@@ -1151,6 +1159,7 @@ def scyther_encounter(starter_pokemon):
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
 
+    print("Move 5/7")
     move5 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move5 == "1" and opponent_defense_lower == 0:
         scyther_HP -= 12
@@ -1290,6 +1299,7 @@ def scyther_encounter(starter_pokemon):
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
 
+    print("Move 6/7")
     move6 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move6 == "1" and opponent_defense_lower == 0:
         scyther_HP -= 12
@@ -1429,6 +1439,7 @@ def scyther_encounter(starter_pokemon):
     elif starter_pokemon == "Quaxly":
         print("1 = Pound | 2 = Water Gun | 3 = Growl")
 
+    print("Move 7/7")
     move7 = input("What move would you like to use? ")
     if starter_pokemon == "Fuecoco" and move7 == "1" and opponent_defense_lower == 0:
         scyther_HP -= 12
