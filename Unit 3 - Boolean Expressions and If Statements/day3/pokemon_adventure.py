@@ -723,7 +723,7 @@ def scyther_encounter(starter_pokemon):
         print("YOU WIN!")
         print(f"{starter_pokemon} leveled up to level 2")
         print(f"You earned 100 Pokedollars")
-        print(f"Final Score: {scyther_HP*-100} + {score}")
+        print(f"Final Score: {scyther_HP*-100+{score}}")
 
         return "Won"
     elif l1_starter_pokemon_HP <= 0:
@@ -839,7 +839,7 @@ def scyther_encounter(starter_pokemon):
         print("YOU WIN!")
         print(f"{starter_pokemon} leveled up to level 2")
         print(f"You earned 100 Pokedollars")
-        print(f"Final Score: {scyther_HP*-100} + {score}")
+        print(f"Final Score: {scyther_HP*-100+{score}}")
 
         return "Won"
     elif l1_starter_pokemon_HP <= 0:
@@ -980,7 +980,7 @@ def scyther_encounter(starter_pokemon):
         print("YOU WIN!")
         print(f"{starter_pokemon} leveled up to level 2")
         print(f"You earned 100 Pokedollars")
-        print(f"Final Score: {scyther_HP*-100} + {score}")
+        print(f"Final Score: {scyther_HP*-100+{score}}")
 
         return "Won"
     elif l1_starter_pokemon_HP <= 0:
@@ -1121,7 +1121,7 @@ def scyther_encounter(starter_pokemon):
         print("YOU WIN!")
         print(f"{starter_pokemon} leveled up to level 2")
         print(f"You earned 100 Pokedollars")
-        print(f"Final Score: {scyther_HP*-100} + {score}")
+        print(f"Final Score: {scyther_HP*-100+{score}}")
 
         return "Won"
     elif l1_starter_pokemon_HP <= 0:
@@ -1260,7 +1260,7 @@ def scyther_encounter(starter_pokemon):
         print("YOU WIN!")
         print(f"{starter_pokemon} leveled up to level 2")
         print(f"You earned 100 Pokedollars")
-        print(f"Final Score: {scyther_HP*-100} + {score}")
+        print(f"Final Score: {scyther_HP*-100+{score}}")
 
         return "Won"
     elif l1_starter_pokemon_HP <= 0:
@@ -1399,7 +1399,7 @@ def scyther_encounter(starter_pokemon):
         print("YOU WIN!")
         print(f"{starter_pokemon} leveled up to level 2")
         print(f"You earned 100 Pokedollars")
-        print(f"Final Score: {scyther_HP*-100} + {score}")
+        print(f"Final Score: {scyther_HP*-100+{score}}")
 
         return "Won"
     elif l1_starter_pokemon_HP <= 0:
@@ -1538,7 +1538,7 @@ def scyther_encounter(starter_pokemon):
         print("YOU WIN!")
         print(f"{starter_pokemon} leveled up to level 2")
         print(f"You earned 100 Pokedollars")
-        print(f"Final Score: {scyther_HP*-100} + {score}")
+        print(f"Final Score: {scyther_HP*-100+{score}}")
 
         return "Won"
     elif l1_starter_pokemon_HP <= 0:
