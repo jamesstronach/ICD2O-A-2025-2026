@@ -28,12 +28,20 @@ def introscreen():
 def decisions(money, day):
     print("Day", day)
     print("Money:", money)
+
     glass_cost = 2
     sign_cost = 15
     weathers = ["Sunny", "Cloudy", "Hot and Dry"]
     weather = random.choice(weathers)
 
     print("The weather is", weather)
+
+    if weather == "Sunny":
+        glass_price = random.randint(3,4)
+    elif weather == "Cloudy":
+        glass_price = random.randint(1,2)
+    elif weather == "Hot and Dry":
+        glass_price = random.randint(4,5)
 
     glasses = int(input("How many glasses would you like to make? "))
 
