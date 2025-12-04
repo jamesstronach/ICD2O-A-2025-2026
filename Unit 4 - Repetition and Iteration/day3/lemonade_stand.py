@@ -1,20 +1,29 @@
 import random
 
 gameover = False
+
 def introscreen():
     print("HI! WELCOME TO LEMONSVILLE CALIFORNIA!\nIN THIS SMALL TOWN, YOU ARE IN CHARGE OF RUNNING YOUR OWN LEMONADE STAND. YOU CAN\n COMPETE WITH ONLY YOURSELF BECAUSE I SUCK AT CODING\n, BUT HOW MUCH PROFIT YOU MAKE IS UP TO YOU.\n ARE YOU STARTING A NEW GAME? (YES OR NO)")
-    newgame = input("TYPE YOUR ANSWER AND HIT RETURN ==> ")
-    if newgame == ("Yes".lower):
-        day = 0
-        return True, day
-    elif newgame == ("No".lower):
-        return False
-    elif newgame == False:
+    newgame = input("TYPE YOUR ANSWER AND HIT RETURN (\"Yes\" or \"No\") ==> ")
+    if newgame == "Yes":
+        day = 1
+        money = 200
+        return money, day
+    elif newgame == "No":
         day = int(input("What day was it the last time you played? "))
         money = int(input("How much money did you have? "))
-        return day, money
-    else:
-        # Bring us back to asking
+        return money, day
+    
+    while newgame != "Yes" or newgame != "No":
+        newgame = input("TYPE YOUR ANSWER AND HIT RETURN (\"Yes\" or \"No\") ==> ")
+        if newgame == "Yes":
+            day = 1
+            money = 200
+            return money, day
+        elif newgame == "No":
+            day = int(input("What day was it the last time you played? "))
+            money = int(input("How much money did you have? "))
+            return money, day
 
 def decisions(money, day):
     print("Day", day)
@@ -32,11 +41,18 @@ def decisions(money, day):
         print("You don't have that much money as you only have ",money, "cents")
         glasses = int(input("How many glasses would you like to make? "))
 
+    money -= glasses*glass_cost
+
     signs = int(input("How many signs would you like to make? "))
+
+    while signs*sign_cost > money:
+        print("You don't have that much money as you only have ",money, "cents")
+        signs = int(input("How many signs would you like to make? "))
+
     money -= signs*sign_cost
 
-    glass_price = int(input("How much money would you like to sell your lemonade for (in cents)"))
-  
+    glass_price = int(input("How much money would you like to sell your lemonade for (in cents) "))
+
     return glasses, signs, glass_price, money, weather
 
 # returns how much money you have left
@@ -60,7 +76,13 @@ def sold(glasses, signs, glass_price, money, weather):
     money += glasses_sold*glass_price
     print("Glasses Sold:", glasses_sold)
 
+    return money
+
+money, day = introscreen()
+
 while gameover == False:
+
     glasses, signs, glass_price, money, weather = decisions(money, day)
     money = sold(glasses, signs, glass_price, money, weather)
+    print("-"*100)
     day+=1
