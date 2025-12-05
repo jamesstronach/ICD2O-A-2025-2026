@@ -29,7 +29,6 @@ def decisions(money, day):
     print("Day", day)
     print("Money:", money)
 
-    glass_cost = 2
     sign_cost = 15
     weathers = ["Sunny", "Cloudy", "Hot and Dry"]
     weather = random.choice(weathers)
@@ -37,11 +36,13 @@ def decisions(money, day):
     print("The weather is", weather)
 
     if weather == "Sunny":
-        glass_price = random.randint(3,4)
+        glass_cost = random.randint(3,4)
     elif weather == "Cloudy":
-        glass_price = random.randint(1,2)
+        glass_cost = random.randint(1,2)
     elif weather == "Hot and Dry":
-        glass_price = random.randint(4,5)
+        glass_cost = random.randint(4,5)
+
+    print("Glass Cost:", glass_cost)
 
     glasses = int(input("How many glasses would you like to make? "))
 
@@ -79,18 +80,22 @@ def sold(glasses, signs, glass_price, money, weather):
     elif weather == "Hot and Dry" and glass_price <= 25:
         glasses_sold = random.randint(80, 100)*0.01*glasses # and don't just make it percentage because what if they make like 2 glasses, they're gonna sell out ofc
 
+    rounded_glasses_sold = int(glasses_sold)
+
     money -= glasses*2
     money -= signs*15
-    money += glasses_sold*glass_price
-    print("Glasses Sold:", glasses_sold)
+    money += rounded_glasses_sold*glass_price
+    print("Glasses Sold:", rounded_glasses_sold)
 
     return money
 
 money, day = introscreen()
 
 while gameover == False:
-
     glasses, signs, glass_price, money, weather = decisions(money, day)
     money = sold(glasses, signs, glass_price, money, weather)
     print("-"*100)
     day+=1
+    if money <= 0:
+        gameover = True
+        print("YOU BROKE DUMBAHH. GO DO BEP2O STOOPIDD")
