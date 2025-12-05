@@ -4,15 +4,7 @@ gameover = False
 
 def introscreen():
     print("HI! WELCOME TO LEMONSVILLE CALIFORNIA!\nIN THIS SMALL TOWN, YOU ARE IN CHARGE OF RUNNING YOUR OWN LEMONADE STAND. YOU CAN\n COMPETE WITH ONLY YOURSELF BECAUSE I SUCK AT CODING\n, BUT HOW MUCH PROFIT YOU MAKE IS UP TO YOU.\n ARE YOU STARTING A NEW GAME? (YES OR NO)")
-    newgame = input("TYPE YOUR ANSWER AND HIT RETURN (\"Yes\" or \"No\") ==> ")
-    if newgame == "Yes":
-        day = 1
-        money = 200
-        return money, day
-    elif newgame == "No":
-        day = int(input("What day was it the last time you played? "))
-        money = int(input("How much money did you have? "))
-        return money, day
+    newgame = ""
     
     while newgame != "Yes" or newgame != "No":
         newgame = input("TYPE YOUR ANSWER AND HIT RETURN (\"Yes\" or \"No\") ==> ")
@@ -22,7 +14,11 @@ def introscreen():
             return money, day
         elif newgame == "No":
             day = int(input("What day was it the last time you played? "))
-            money = int(input("How much money did you have? "))
+            money = -1
+            while money <=0:
+                money = int(input("How much money did you have? "))
+                if money <= 0:
+                    print("Not a valid amount!")
             return money, day
 
 def decisions(money, day):
