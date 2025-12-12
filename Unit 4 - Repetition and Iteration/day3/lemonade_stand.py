@@ -61,7 +61,7 @@ def decisions(money, day):
     return glasses, signs, glass_price, money, weather
 
 # returns how much money you have left
-def sold(glasses, signs, glass_price, money, weather):
+def sold(glasses, glass_price, money, weather):
 # need to incorporate signs into the equasion
     if weather == "Sunny" and glass_price <= 18:
         glasses_sold = random.randint(40, 78)*0.01*glasses
@@ -78,8 +78,6 @@ def sold(glasses, signs, glass_price, money, weather):
 
     rounded_glasses_sold = int(glasses_sold)
 
-    money -= glasses*2
-    money -= signs*15
     money += rounded_glasses_sold*glass_price
     print("Glasses Sold:", rounded_glasses_sold)
 
