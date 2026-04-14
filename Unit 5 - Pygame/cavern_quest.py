@@ -8,258 +8,306 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Cavern Quest")
 clock = pygame.time.Clock()
 
-# Tiles
-grass = pygame.image.load("grass_32.png").convert()
-dirt1 = pygame.image.load("dirt-pixilart.png").convert()
-dirt2 = pygame.image.load("dirt-2-pixilart.png").convert()
+# --- TILES ---
+grass   = pygame.image.load("grass_32.png").convert()
+dirt1   = pygame.image.load("dirt-pixilart.png").convert()
+dirt2   = pygame.image.load("dirt-2-pixilart.png").convert()
 cobble1 = pygame.image.load("cobble1.png").convert()
 cobble2 = pygame.image.load("cobble2-pixilart.png").convert()
-coal = pygame.image.load("coal.png").convert()
-# NEW TILES: Create these 32x32 images
-cloud = pygame.Surface((32, 32)) # Placeholder
-cloud.fill((200, 200, 255))
-chest_img = pygame.Surface((32, 32)) # Placeholder
-chest_img.fill((139, 69, 19))
+coal    = pygame.image.load("coal.png").convert()
 
-# Player & Animations
-turtle = pygame.image.load("turtle.png").convert()
+TILE_DICT  = {1: grass, 2: dirt1, 3: dirt2, 4: cobble1, 5: cobble2, 6: coal}
+MINE_TIMES = {1: 60, 2: 120, 3: 180, 4: 300, 5: 360, 6: 400}
+MINE_REACH = 80
+
+# --- BLOCK SHEET ---
+block_sheet  = pygame.image.load("block.png").convert()
+BLOCK_CELL_W = block_sheet.get_width() // 4
+BLOCK_CELL_H = block_sheet.get_height() // 4
+BLOCK_BG_KEY = block_sheet.get_at((0, 0))
+block_sheet.set_colorkey(BLOCK_BG_KEY)
+
+# --- PLAYER SPRITE SETUP ---
+turtle     = pygame.image.load("turtle.png").convert()
 walk_sheet = pygame.image.load("turtle1.png").convert()
-BG_KEY = turtle.get_at((0, 0))
+BG_KEY      = turtle.get_at((0, 0))
 WALK_BG_KEY = walk_sheet.get_at((0, 0))
 turtle.set_colorkey(BG_KEY)
 walk_sheet.set_colorkey(WALK_BG_KEY)
 
-# New Animations/Items (You need to make/load these)
-# Assuming swing sheet is 1 row, 5 columns
-try:
-    swing_sheet = pygame.image.load("swing_sheet.png").convert_alpha()
-    SWING_W = swing_sheet.get_width() // 5
-    SWING_H = swing_sheet.get_height()
-    swing_frames = [swing_sheet.subsurface(pygame.Rect(i*SWING_W, 0, SWING_W, SWING_H)) for i in range(5)]
-except FileNotFoundError:
-    print("Warning: swing_sheet.png missing. Using placeholders.")
-    swing_frames = [pygame.Surface((32,32), pygame.SRCALPHA) for _ in range(5)] # Placeholders
+IDLE_CELL_W = turtle.get_width() // 10
+IDLE_CELL_H = turtle.get_height()
+WALK_CELL_W = walk_sheet.get_width() // 12
+WALK_CELL_H = walk_sheet.get_height()
 
-# Tools (for UI and hand)
-sword_img = pygame.Surface((20, 20)); sword_img.fill((200, 200, 200))
-pickaxe_img = pygame.Surface((20, 20)); pickaxe_img.fill((100, 100, 100))
+PLAYER_W = 28
+PLAYER_H = 20
 
-# --- PLAYER SETUP ---
-PLAYER_W, PLAYER_H = 28, 20
-IDLE_CELL_W, IDLE_CELL_H = turtle.get_width() // 10, turtle.get_height() // 1
-WALK_CELL_W, WALK_CELL_H = walk_sheet.get_width() // 12, walk_sheet.get_height() // 1
+block_frames = []
+for row in range(4):
+    for col in range(4):
+        frame = block_sheet.subsurface((col * BLOCK_CELL_W, row * BLOCK_CELL_H, BLOCK_CELL_W, BLOCK_CELL_H)).copy()
+        frame.set_colorkey(BLOCK_BG_KEY)
+        mask   = pygame.mask.from_surface(frame)
+        bounds = mask.get_bounding_rects()
+        if bounds:
+            frame = frame.subsurface(bounds[0]).copy()
+            frame.set_colorkey(BLOCK_BG_KEY)
+        block_frames.append(pygame.transform.scale(frame, (PLAYER_W, PLAYER_H)))
 
 def crop_and_scale(frame, key, w, h):
     frame.set_colorkey(key)
-    mask = pygame.mask.from_surface(frame)
+    mask   = pygame.mask.from_surface(frame)
     bounds = mask.get_bounding_rects()
     if bounds:
         cropped = frame.subsurface(bounds[0]).copy()
         return pygame.transform.scale(cropped, (w, h))
     return pygame.transform.scale(frame, (w, h))
 
-idle_frames = [crop_and_scale(turtle.subsurface((i*IDLE_CELL_W, 0, IDLE_CELL_W, IDLE_CELL_H)), BG_KEY, PLAYER_W, PLAYER_H) for i in range(10)]
-walk_frames = [crop_and_scale(walk_sheet.subsurface((i*WALK_CELL_W, 0, WALK_CELL_W, WALK_CELL_H)), WALK_BG_KEY, PLAYER_W, PLAYER_H) for i in range(12)]
+idle_frames = [
+    crop_and_scale(turtle.subsurface((i * IDLE_CELL_W, 0, IDLE_CELL_W, IDLE_CELL_H)), BG_KEY, PLAYER_W, PLAYER_H)
+    for i in range(10)
+]
+walk_frames = [
+    crop_and_scale(walk_sheet.subsurface((i * WALK_CELL_W, 0, WALK_CELL_W, WALK_CELL_H)), WALK_BG_KEY, PLAYER_W, PLAYER_H)
+    for i in range(12)
+]
 
-# --- MAP & DATA SETUP ---
+# --- PICKAXE ---
+pickaxe_img = pygame.image.load("pickaxe.png").convert()
+PICK_BG_KEY = pickaxe_img.get_at((0, 0))
+pickaxe_img.set_colorkey(PICK_BG_KEY)
+pickaxe_img = pygame.transform.scale(pickaxe_img, (20, 20))
+
+is_swinging     = False
+swing_angle     = 45
+swing_direction = 1
+SWING_SPEED     = 8
+SWING_MAX_ANGLE = 80
+SWING_MIN_ANGLE = 10
+
+# --- BLOCKING ---
+is_blocking       = False
+block_frame_index = 0
+block_timer       = 0
+block_speed       = 4
+
+# --- GRID / MAP ---
 grid = []
-chest_data = {} # Stores inventory for specific chests: {(col, row): {"coal": 5}}
+with open("tile1.tile") as f:
+    for line in f:
+        grid.append([int(ch) for ch in line.strip()])
 
-try:
-    with open("tile1.tile") as f:
-        for line in f:
-            grid.append([int(ch) for ch in line.strip()])
-except FileNotFoundError:
-    grid = [[0]*40 for _ in range(30)] # Fallback empty grid
-
-map_height = len(grid) * 32
-map_width = len(grid[0]) * 32 if grid else 0
-
-TILE_DICT = {1: grass, 2: dirt1, 3: dirt2, 4: cobble1, 5: cobble2, 6: coal, 7: cloud, 8: chest_img}
-MINE_TIMES = {1: 60, 2: 120, 3: 180, 4: 300, 5: 360, 6: 400, 7: 30, 8: 10}
-MINE_REACH = 80
+map_width  = len(grid[0]) * 32
+map_height = len(grid)    * 32
 
 def get_tile_at(px, py):
-    col, row = int(px) // 32, int(py) // 32
+    col = int(px) // 32
+    row = int(py) // 32
     if 0 <= row < len(grid) and 0 <= col < len(grid[row]):
         return grid[row][col]
     return 0
 
-# --- SYSTEMS DATA ---
-# Inventory System
-inventory = {"dirt": 0, "cobble": 0, "coal": 0, "cloud": 0}
-hotbar = ["sword", "pickaxe"]
+# --- INVENTORY ---
+inventory = {"coal": 0}
+
+# --- HOTBAR ---
+hotbar            = ["pickaxe"]
 active_slot_index = 0
 
-# Game States
-game_state = "PLAY" # Can be "PLAY", "CRAFTING", "CHEST"
-active_chest_pos = None
+# --- PLAYER STATE ---
+player_x          = 600
+player_y          = 160
+velocity_y        = 0
+gravity           = 0.1
+jump_force        = -3
+player_walk_speed = 0.5
+player_run_speed  = 2
+on_ground         = False
+facing_left       = False
+was_moving        = False
 
-# Player Variables
-player_x, player_y = 600, 160
-velocity_y = 0
-gravity, jump_force = 0.5, -8
-player_walk_speed, player_run_speed = 3, 6
-on_ground, facing_left, was_moving = False, False, False
-IDLE_FEET_OFFSET, COLLISION_OFFSET_X = 20, 2
+IDLE_FEET_OFFSET   = 20
+COLLISION_OFFSET_X = 2
 
-# Animation Variables
-frame_index, animation_timer, animation_speed = 0, 0, 6
-mining_target, mining_progress = None, 0
+# --- ANIMATION STATE ---
+frame_index     = 0
+animation_timer = 0
+animation_speed = 15
 
-# Action Variables
-is_swinging = False
-swing_timer = 0
-current_swing_frame = 0
-is_blocking = False
+# --- MINING STATE ---
+mining_target   = None
+mining_progress = 0
 
-# Font for UI
+# --- GAME STATE ---
+game_state   = "PLAY"
+jump_pressed = False
+
+# --- CAMERA ---
+camera_x = 0
+camera_y = 0
+
+# --- FONT ---
 font = pygame.font.SysFont("Arial", 18)
 
 running = True
-camera_x, camera_y = 0, 0
 
 while running:
-    # --- EVENT HANDLING ---
+    # ── EVENTS ──────────────────────────────────────────────────────────────
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-            
+
         if event.type == pygame.KEYDOWN:
-            # UI Toggles
             if event.key == pygame.K_c:
                 game_state = "CRAFTING" if game_state == "PLAY" else "PLAY"
             if event.key == pygame.K_ESCAPE:
                 game_state = "PLAY"
-                
-            # Hotbar Selection (1 and 2 keys)
-            if event.key == pygame.K_1: active_slot_index = 0
-            if event.key == pygame.K_2: active_slot_index = 1
-                
-            # Movement/Actions (Only when playing)
-            if game_state == "PLAY":
-                if event.key == pygame.K_SPACE and on_ground and not is_blocking:
-                    velocity_y = jump_force
-                    on_ground = False
-                if event.key == pygame.K_b: # Block key
-                    is_blocking = True
-                    
-        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_1:
+                active_slot_index = 0
             if event.key == pygame.K_b:
-                is_blocking = False
-                
-        # Mouse Clicking
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if game_state == "PLAY" and event.button == 1: # Left click
-                active_item = hotbar[active_slot_index]
-                if active_item in ["sword", "pickaxe"] and not is_blocking:
-                    is_swinging = True
-                    swing_timer = 0
-                    current_swing_frame = 0
+                is_blocking = True
+            if game_state == "PLAY":
+                if event.key == pygame.K_SPACE and on_ground:
+                    velocity_y   = jump_force
+                    on_ground    = False
+                    jump_pressed = True
+
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_SPACE:
+                jump_pressed = False
+            if event.key == pygame.K_b:
+                is_blocking       = False
+                block_frame_index = 0
+                block_timer       = 0
 
     keys = pygame.key.get_pressed()
-    screen.fill((135, 206, 235)) # Sky blue
+    screen.fill((135, 206, 235))
 
-    # --- LOGIC (ONLY UPDATE IF PLAYING) ---
+    # ── GAMEPLAY LOGIC ───────────────────────────────────────────────────────
     if game_state == "PLAY":
+
         speed = player_run_speed if (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]) else player_walk_speed
 
-        # Movement (Disabled if blocking)
         moving = False
         if not is_blocking:
             if keys[pygame.K_LEFT]:
-                player_x -= speed
-                moving, facing_left = True, True
+                player_x   -= speed
+                moving      = True
+                facing_left = True
             if keys[pygame.K_RIGHT]:
-                player_x += speed
-                moving, facing_left = True, False
+                player_x   += speed
+                moving      = True
+                facing_left = False
 
-        # Horizontal collision
-        left_tile = get_tile_at(player_x + COLLISION_OFFSET_X, player_y + PLAYER_H // 2)
+        left_tile  = get_tile_at(player_x + COLLISION_OFFSET_X,            player_y + PLAYER_H // 2)
         right_tile = get_tile_at(player_x + PLAYER_W - COLLISION_OFFSET_X, player_y + PLAYER_H // 2)
-        if left_tile != 0 and keys[pygame.K_LEFT]: player_x += speed
+        if left_tile  != 0 and keys[pygame.K_LEFT]:  player_x += speed
         if right_tile != 0 and keys[pygame.K_RIGHT]: player_x -= speed
 
-        # Map boundary
         player_x = max(0, min(player_x, map_width - PLAYER_W))
 
-        # Gravity & Vertical Collision
         velocity_y += gravity
-        player_y += velocity_y
+        player_y   += velocity_y
 
         head = player_y + 4
-        if (get_tile_at(player_x + COLLISION_OFFSET_X, head) != 0 or get_tile_at(player_x + PLAYER_W - COLLISION_OFFSET_X, head) != 0) and velocity_y < 0:
-            player_y = (int(head) // 32 + 1) * 32 - 4
+        if (get_tile_at(player_x + COLLISION_OFFSET_X,            head) != 0 or
+            get_tile_at(player_x + PLAYER_W - COLLISION_OFFSET_X, head) != 0) and velocity_y < 0:
+            player_y   = (int(head) // 32 + 1) * 32 - 4
             velocity_y = 0
 
         feet = player_y + IDLE_FEET_OFFSET
-        if (get_tile_at(player_x + COLLISION_OFFSET_X, feet) != 0 or get_tile_at(player_x + PLAYER_W - COLLISION_OFFSET_X, feet) != 0) and velocity_y > 0:
-            player_y = (int(feet) // 32) * 32 - IDLE_FEET_OFFSET
+        if (get_tile_at(player_x + COLLISION_OFFSET_X,            feet) != 0 or
+            get_tile_at(player_x + PLAYER_W - COLLISION_OFFSET_X, feet) != 0) and velocity_y > 0:
+            player_y   = (int(feet) // 32) * 32 - IDLE_FEET_OFFSET
             velocity_y = 0
-            on_ground = True
+            on_ground  = True
         else:
             on_ground = False
 
         if player_y + IDLE_FEET_OFFSET > map_height:
-            player_y = map_height - IDLE_FEET_OFFSET
-            velocity_y, on_ground = 0, True
+            player_y   = map_height - IDLE_FEET_OFFSET
+            velocity_y = 0
+            on_ground  = True
 
-        # Camera
-        camera_x = max(0, min(int(player_x - SCREEN_WIDTH // 2.3), map_width - SCREEN_WIDTH))
-        camera_y = max(0, min(int(player_y - SCREEN_HEIGHT // 2), map_height - SCREEN_HEIGHT))
+        camera_x = max(0, min(int(player_x - SCREEN_WIDTH  // 2.3), map_width  - SCREEN_WIDTH))
+        camera_y = max(0, min(int(player_y - SCREEN_HEIGHT // 2),   map_height - SCREEN_HEIGHT))
 
-        # Mining Interaction
-        mouse_buttons = pygame.mouse.get_pressed()
+        # Mining
+        mouse_held    = pygame.mouse.get_pressed()[0]
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        world_mouse_x, world_mouse_y = mouse_x + camera_x, mouse_y + camera_y
-        tile_col, tile_row = int(world_mouse_x) // 32, int(world_mouse_y) // 32
-        
-        dist = ((world_mouse_x - (player_x + PLAYER_W//2))**2 + (world_mouse_y - (player_y + PLAYER_H//2))**2)**0.5
+        world_mouse_x = mouse_x + camera_x
+        world_mouse_y = mouse_y + camera_y
+        tile_col      = int(world_mouse_x) // 32
+        tile_row      = int(world_mouse_y) // 32
+        dist = ((world_mouse_x - (player_x + PLAYER_W // 2)) ** 2 +
+                (world_mouse_y - (player_y + PLAYER_H // 2)) ** 2) ** 0.5
 
-        if mouse_buttons[0] and dist <= MINE_REACH and hotbar[active_slot_index] == "pickaxe" and not is_blocking:
+        if mouse_held and dist <= MINE_REACH and hotbar[active_slot_index] == "pickaxe" and not is_blocking:
             if 0 <= tile_row < len(grid) and 0 <= tile_col < len(grid[tile_row]):
                 tile_val = grid[tile_row][tile_col]
                 if tile_val != 0:
-                    # If it's a chest, open it instead of mining it (Right Click usually better, using left for now)
-                    if tile_val == 8:
-                        game_state = "CHEST"
-                        active_chest_pos = (tile_col, tile_row)
+                    if mining_target == (tile_col, tile_row):
+                        mining_progress += 1
+                        if mining_progress >= MINE_TIMES.get(tile_val, 120):
+                            grid[tile_row][tile_col] = 0
+                            if tile_val == 6:
+                                inventory["coal"] += 1
+                            mining_target   = None
+                            mining_progress = 0
                     else:
-                        if mining_target == (tile_col, tile_row):
-                            mining_progress += 1
-                            if mining_progress >= MINE_TIMES.get(tile_val, 120):
-                                grid[tile_row][tile_col] = 0 # Break block
-                                # Add to inventory pseudo-logic
-                                if tile_val == 6: inventory["coal"] += 1
-                                elif tile_val == 7: inventory["cloud"] += 1
-                                mining_target, mining_progress = None, 0
-                        else:
-                            mining_target, mining_progress = (tile_col, tile_row), 0
+                        mining_target   = (tile_col, tile_row)
+                        mining_progress = 0
         else:
-            mining_target, mining_progress = None, 0
+            mining_target   = None
+            mining_progress = 0
 
-        # Animation updates
-        if moving != was_moving: frame_index, animation_timer = 0, 0
+        # Pickaxe swing
+        if mouse_held and hotbar[active_slot_index] == "pickaxe" and not is_blocking:
+            is_swinging = True
+
+        if is_swinging:
+            swing_angle += SWING_SPEED * swing_direction
+            if swing_angle >= SWING_MAX_ANGLE:
+                swing_direction = -1
+            if swing_angle <= SWING_MIN_ANGLE:
+                swing_direction = 1
+            if not mouse_held:
+                if swing_angle > 45:
+                    swing_angle -= SWING_SPEED
+                elif swing_angle < 45:
+                    swing_angle += SWING_SPEED
+                else:
+                    is_swinging = False
+                    swing_angle = 45
+
+        # Blocking animation
+        if is_blocking:
+            block_timer += 1
+            if block_timer >= block_speed:
+                block_timer = 0
+                if block_frame_index < len(block_frames) - 1:
+                    block_frame_index += 1
+
+        # Player animation
+        if moving != was_moving:
+            frame_index     = 0
+            animation_timer = 0
         was_moving = moving
+
         animation_timer += 1
         if animation_timer >= animation_speed:
             animation_timer = 0
-            frame_index = (frame_index + 1) % (len(walk_frames) if moving else len(idle_frames))
+            if moving:
+                frame_index = (frame_index + 1) % len(walk_frames)
+            else:
+                frame_index = (frame_index + 1) % len(idle_frames)
 
-        if is_swinging:
-            swing_timer += 1
-            if swing_timer > 3: # Speed of swing
-                swing_timer = 0
-                current_swing_frame += 1
-                if current_swing_frame >= 5:
-                    is_swinging = False
-
-    # --- DRAWING ---
-    # Draw Tiles (Optimized Culling)
+    # ── DRAWING ──────────────────────────────────────────────────────────────
     start_col = max(0, camera_x // 32)
-    end_col = min(len(grid[0]), (camera_x + SCREEN_WIDTH) // 32 + 1) if grid else 0
+    end_col   = min(len(grid[0]), (camera_x + SCREEN_WIDTH)  // 32 + 1)
     start_row = max(0, camera_y // 32)
-    end_row = min(len(grid), (camera_y + SCREEN_HEIGHT) // 32 + 1)
+    end_row   = min(len(grid),   (camera_y + SCREEN_HEIGHT) // 32 + 1)
 
     for ri in range(start_row, end_row):
         for ci in range(start_col, end_col):
@@ -267,66 +315,53 @@ while running:
             if val in TILE_DICT:
                 screen.blit(TILE_DICT[val], (ci * 32 - camera_x, ri * 32 - camera_y))
 
-    # Draw Player
+    # Player
     if is_blocking:
-        # TODO: Replace with your friend's block frame
-        player_frame = idle_frames[0].copy()
-        player_frame.fill((255,0,0, 128), special_flags=pygame.BLEND_RGBA_MULT) # Red tint to show block
+        player_frame = block_frames[block_frame_index]
     else:
         player_frame = walk_frames[frame_index] if moving else idle_frames[frame_index]
-        
-    if facing_left: player_frame = pygame.transform.flip(player_frame, True, False)
-    
+
+    if facing_left:
+        player_frame = pygame.transform.flip(player_frame, True, False)
     screen.blit(player_frame, (player_x - camera_x, player_y - camera_y))
 
-    # Draw Tool/Swing
-    if is_swinging:
-        swing_img = swing_frames[current_swing_frame]
-        if facing_left:
-            swing_img = pygame.transform.flip(swing_img, True, False)
-            screen.blit(swing_img, (player_x - camera_x - 20, player_y - camera_y - 10))
-        else:
-            screen.blit(swing_img, (player_x - camera_x + 10, player_y - camera_y - 10))
+    # Pickaxe
+    if hotbar[active_slot_index] == "pickaxe" and not is_blocking:
+        angle         = swing_angle if not facing_left else -swing_angle
+        rotated_pick  = pygame.transform.rotate(pickaxe_img, -angle + 45)
+        pick_offset_x = PLAYER_W if not facing_left else -rotated_pick.get_width()
+        pick_offset_y = PLAYER_H // 2 - rotated_pick.get_height() // 2
+        screen.blit(rotated_pick, (
+            player_x - camera_x + pick_offset_x,
+            player_y - camera_y + pick_offset_y
+        ))
 
-    # Draw Mining Progress
+    # Mining progress bar
     if mining_target is not None and game_state == "PLAY":
         tc, tr = mining_target
         if grid[tr][tc] != 0:
-            bar_x, bar_y = player_x - camera_x, player_y - camera_y - 12
-            pygame.draw.rect(screen, (50, 50, 50), (bar_x, bar_y, 32, 6))
-            pygame.draw.rect(screen, (255, 200, 0), (bar_x, bar_y, int((mining_progress / MINE_TIMES.get(grid[tr][tc], 120)) * 32), 6))
+            mine_time = MINE_TIMES.get(grid[tr][tc], 120)
+            bar_x     = player_x - camera_x
+            bar_y     = player_y - camera_y - 12
+            bar_width = int((mining_progress / mine_time) * 32)
+            pygame.draw.rect(screen, (50,  50,  50),  (bar_x, bar_y, 32, 6))
+            pygame.draw.rect(screen, (255, 200, 0),   (bar_x, bar_y, bar_width, 6))
 
-    # --- UI DRAWING ---
-    # Regular UI (Hotbar & Inventory)
-    pygame.draw.rect(screen, (40, 40, 40), (10, 10, 200, 40))
-    hotbar_text = font.render(f"Equipped: {hotbar[active_slot_index]}", True, (255, 255, 255))
-    screen.blit(hotbar_text, (20, 20))
+    # ── UI ────────────────────────────────────────────────────────────────────
+    pygame.draw.rect(screen, (40, 40, 40), (10, 10, 160, 36))
+    screen.blit(font.render(f"Equipped: {hotbar[active_slot_index]}", True, (255, 255, 255)), (18, 18))
 
-    inv_y = 60
+    inv_y = 55
     for item, count in inventory.items():
-        inv_text = font.render(f"{item.capitalize()}: {count}", True, (200, 200, 200))
-        screen.blit(inv_text, (10, inv_y))
-        inv_y += 20
+        screen.blit(font.render(f"{item.capitalize()}: {count}", True, (220, 220, 220)), (10, inv_y))
+        inv_y += 22
 
-    # Crafting UI Overlay
     if game_state == "CRAFTING":
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         screen.blit(overlay, (0, 0))
         pygame.draw.rect(screen, (100, 100, 100), (200, 100, 400, 400), border_radius=10)
-        title = font.render("Crafting Menu (Press 'C' to close)", True, (255, 255, 255))
-        screen.blit(title, (220, 120))
-        # Add your crafting recipe drawing logic here later!
-
-    # Chest UI Overlay
-    if game_state == "CHEST":
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
-        screen.blit(overlay, (0, 0))
-        pygame.draw.rect(screen, (139, 69, 19), (200, 100, 400, 400), border_radius=10)
-        title = font.render("Chest Contents (Press ESC to close)", True, (255, 255, 255))
-        screen.blit(title, (220, 120))
-        # Add logic to move items between inventory dictionary and chest_data here!
+        screen.blit(font.render("Crafting Menu  (C to close)", True, (255, 255, 255)), (220, 120))
 
     pygame.display.flip()
     clock.tick(60)
