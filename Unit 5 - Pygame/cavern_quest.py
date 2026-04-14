@@ -159,14 +159,13 @@ while running:
             running = False
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_c:
-                game_state = "CRAFTING" if game_state == "PLAY" else "PLAY"
             if event.key == pygame.K_ESCAPE:
                 game_state = "PLAY"
-            if event.key == pygame.K_1:
-                active_slot_index = 0
-            if event.key == pygame.K_b:
+            if event.key == pygame.K_TAB:
+                game_state = "CRAFTING" if game_state == "PLAY" else "PLAY"
+            if event.key == pygame.K_f:
                 is_blocking = True
+
             if game_state == "PLAY":
                 if event.key == pygame.K_SPACE and on_ground:
                     velocity_y   = jump_force
@@ -176,7 +175,7 @@ while running:
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_SPACE:
                 jump_pressed = False
-            if event.key == pygame.K_b:
+            if event.key == pygame.K_f:
                 is_blocking       = False
                 block_frame_index = 0
                 block_timer       = 0
