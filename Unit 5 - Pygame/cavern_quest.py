@@ -52,7 +52,13 @@ PICK_BG_KEY = pickaxe_img.get_at((0, 0))
 pickaxe_img.set_colorkey(PICK_BG_KEY)
 pickaxe_img = pygame.transform.scale(pickaxe_img, (20, 20))
 
-# --- SWORD SPRITE SETUP (UPDATED) ---
+# --- SWORD ITEM (NEW) ---
+sword_item_img = pygame.image.load("sword.png").convert()
+SWORD_ITEM_BG = sword_item_img.get_at((0, 0))
+sword_item_img.set_colorkey(SWORD_ITEM_BG)
+sword_item_img = pygame.transform.scale(sword_item_img, (20, 20)) # Scaled to match pickaxe
+
+# --- SWORD ANIMATION EFFECT SETUP ---
 sword_sheet = pygame.image.load("swing_sheet.png").convert()
 SWORD_BG_KEY = sword_sheet.get_at((0, 0))
 sword_sheet.set_colorkey(SWORD_BG_KEY)
@@ -64,7 +70,6 @@ sword_frames = []
 for i in range(SWORD_FRAMES_COUNT):
     frame = sword_sheet.subsurface((i * SWORD_W, 0, SWORD_W, SWORD_H)).copy()
     frame.set_colorkey(SWORD_BG_KEY)
-    # Scaled to 40x40 so the sweep is visible
     sword_frames.append(pygame.transform.scale(frame, (40, 40)))
 
 # --- GLOBALS ---
@@ -78,7 +83,7 @@ SWING_MIN_ANGLE = 10
 is_slashing      = False
 sword_anim_index = 0
 sword_anim_timer = 0
-SWORD_ANIM_SPEED = 2 # Sped up slightly for a punchier swing
+SWORD_ANIM_SPEED = 2 
 
 is_blocking       = False
 block_frame_index = 0
@@ -135,11 +140,22 @@ def get_tile_at(px, py):
 
 def generate_world(cols, rows):
     new_grid = []
+    
+    # --- ARENA SETTINGS ---
+    arena_width = 14
+    arena_height = 7
+    arena_y_level = 22 # How deep it spawns
+    center_x = cols // 2 # Finds the exact middle of your map
+    
     for r in range(rows):
         row_data = []
         for c in range(cols):
-            if r < 8:
-                row_data.append(0)  # Air/Sky
+            # 1. BOSS ARENA CHECK
+            if (center_x - arena_width // 2 <= c <= center_x + arena_width // 2) and (arena_y_level <= r < arena_y_level + arena_height):
+                row_data.append(0)
+            # 2. STANDARD WORLD
+            elif r < 8:
+                row_data.append(0)  # Sky
             elif r == 8:
                 row_data.append(1)  # Grass
             elif r < 12:
@@ -148,6 +164,7 @@ def generate_world(cols, rows):
                 row_data.append(6 if random.random() < 0.05 else 4) # Stone / Coal
             else:
                 row_data.append(6 if random.random() < 0.08 else 5) # Deepslate / Coal
+                
         new_grid.append(row_data)
     return new_grid
 
@@ -167,7 +184,7 @@ for row in range(4):
 idle_frames = [crop_and_scale(turtle.subsurface((i * IDLE_CELL_W, 0, IDLE_CELL_W, IDLE_CELL_H)), BG_KEY, PLAYER_W, PLAYER_H) for i in range(10)]
 walk_frames = [crop_and_scale(walk_sheet.subsurface((i * WALK_CELL_W, 0, WALK_CELL_W, WALK_CELL_H)), WALK_BG_KEY, PLAYER_W, PLAYER_H) for i in range(12)]
 
-grid = generate_world(100, 30)
+grid = generate_world(100, 100) 
 
 map_width  = len(grid[0]) * 32
 map_height = len(grid)    * 32
@@ -277,6 +294,7 @@ def actions():
             
         elif current_item == "sword":
             is_slashing = True
+            is_swinging = True  # Added so the physical sword item rotates too
     else:
         mining_target, mining_progress = None, 0
 
@@ -284,7 +302,9 @@ def actions():
         swing_angle += SWING_SPEED * swing_direction
         if swing_angle >= SWING_MAX_ANGLE: swing_direction = -1
         if swing_angle <= SWING_MIN_ANGLE: swing_direction = 1
-        if not mouse_held or current_item != "pickaxe":
+        
+        # Check if mouse released or item changed
+        if not mouse_held or (current_item != "pickaxe" and current_item != "sword"):
             if swing_angle > 45: swing_angle -= SWING_SPEED
             elif swing_angle < 45: swing_angle += SWING_SPEED
             else: is_swinging, swing_angle = False, 45
@@ -294,7 +314,6 @@ def actions():
         if sword_anim_timer >= SWORD_ANIM_SPEED:
             sword_anim_timer = 0
             sword_anim_index += 1
-            # Force the full animation to play before resetting
             if sword_anim_index >= len(sword_frames):
                 sword_anim_index = 0
                 if not mouse_held or current_item != "sword":
@@ -320,38 +339,6 @@ def animations():
         if moving: frame_index = (frame_index + 1) % len(walk_frames)
         else: frame_index = (frame_index + 1) % len(idle_frames)
 
-def generate_world(cols, rows):
-    new_grid = []
-    
-    # --- ARENA SETTINGS ---
-    arena_width = 14
-    arena_height = 7
-    arena_y_level = 22 # How deep it spawns
-    center_x = cols // 2 # Finds the exact middle of your map
-    
-    for r in range(rows):
-        row_data = []
-        for c in range(cols):
-            
-            # 1. BOSS ARENA CHECK: If we are in the center zone, make it air (0)
-            if (center_x - arena_width // 2 <= c <= center_x + arena_width // 2) and (arena_y_level <= r < arena_y_level + arena_height):
-                row_data.append(0)
-                
-            # 2. STANDARD WORLD: If not in the arena, generate normal layers
-            elif r < 8:
-                row_data.append(0)  # Sky
-            elif r == 8:
-                row_data.append(1)  # Grass
-            elif r < 12:
-                row_data.append(random.choice([2, 3]))  # Dirt layer
-            elif r < 20:
-                row_data.append(6 if random.random() < 0.05 else 4) # Stone / Coal
-            else:
-                row_data.append(6 if random.random() < 0.08 else 5) # Deepslate / Coal
-                
-        new_grid.append(row_data)
-    return new_grid
-
 def draw_world():
     start_col = max(0, camera_x // 32)
     end_col   = min(len(grid[0]), (camera_x + SCREEN_WIDTH) // 32 + 1)
@@ -373,40 +360,52 @@ def draw_player():
 
     current_item = hotbar[active_slot_index]
 
-    if current_item == "pickaxe" and not is_blocking:
-        if not facing_left:
-            angle = -swing_angle + 45
-            rotated_pick = pygame.transform.rotate(pickaxe_img, angle)
-            pick_offset_x = PLAYER_W
-        else:
-            flipped_pick = pygame.transform.flip(pickaxe_img, True, False)
-            angle = swing_angle - 45
-            rotated_pick = pygame.transform.rotate(flipped_pick, angle)
-            pick_offset_x = -rotated_pick.get_width()
-            
-        pick_offset_y = PLAYER_H // 2 - rotated_pick.get_height() // 2
-        screen.blit(rotated_pick, (player_x - camera_x + pick_offset_x, player_y - camera_y + pick_offset_y))
+    if not is_blocking:
+        # DRAW PICKAXE
+        if current_item == "pickaxe":
+            if not facing_left:
+                angle = -swing_angle + 45
+                rotated_pick = pygame.transform.rotate(pickaxe_img, angle)
+                pick_offset_x = PLAYER_W
+            else:
+                flipped_pick = pygame.transform.flip(pickaxe_img, True, False)
+                angle = swing_angle - 45
+                rotated_pick = pygame.transform.rotate(flipped_pick, angle)
+                pick_offset_x = -rotated_pick.get_width()
+                
+            pick_offset_y = PLAYER_H // 2 - rotated_pick.get_height() // 2
+            screen.blit(rotated_pick, (player_x - camera_x + pick_offset_x, player_y - camera_y + pick_offset_y))
 
-    # --- UPDATED SWORD DRAW LOGIC ---
-    if current_item == "sword" and is_slashing and not is_blocking:
-        sword_img = sword_frames[sword_anim_index]
-        
-        # We calculate the center point of the player to act as our "anchor"
-        player_center_x = player_x - camera_x + (PLAYER_W // 2)
-        player_center_y = player_y - camera_y + (PLAYER_H // 2)
-        
-        if facing_left:
-            sword_img = pygame.transform.flip(sword_img, True, False)
-            # Pull the sprite to the left side of the player's center
-            draw_x = player_center_x - sword_img.get_width()
-        else:
-            # Push the sprite to the right side of the player's center
-            draw_x = player_center_x 
-        
-        # Center the sword vertically against the player's body
-        draw_y = player_center_y - (sword_img.get_height() // 2)
-        
-        screen.blit(sword_img, (draw_x, draw_y))
+        # DRAW SWORD AND EFFECT
+        elif current_item == "sword":
+            # 1. Draw the physical rotating sword item
+            if not facing_left:
+                angle = -swing_angle + 45
+                rotated_sword = pygame.transform.rotate(sword_item_img, angle)
+                sword_offset_x = PLAYER_W
+            else:
+                flipped_sword = pygame.transform.flip(sword_item_img, True, False)
+                angle = swing_angle - 45
+                rotated_sword = pygame.transform.rotate(flipped_sword, angle)
+                sword_offset_x = -rotated_sword.get_width()
+                
+            sword_offset_y = PLAYER_H // 2 - rotated_sword.get_height() // 2
+            screen.blit(rotated_sword, (player_x - camera_x + sword_offset_x, player_y - camera_y + sword_offset_y))
+
+            # 2. Draw the slash effect overlay if actively attacking
+            if is_slashing:
+                sword_effect_img = sword_frames[sword_anim_index]
+                player_center_x = player_x - camera_x + (PLAYER_W // 2)
+                player_center_y = player_y - camera_y + (PLAYER_H // 2)
+                
+                if facing_left:
+                    sword_effect_img = pygame.transform.flip(sword_effect_img, True, False)
+                    draw_x = player_center_x - sword_effect_img.get_width()
+                else:
+                    draw_x = player_center_x 
+                
+                draw_y = player_center_y - (sword_effect_img.get_height() // 2)
+                screen.blit(sword_effect_img, (draw_x, draw_y))
 
 def draw_ui():
     if mining_target and game_state == "PLAY" and hotbar[active_slot_index] == "pickaxe":
@@ -420,6 +419,14 @@ def draw_ui():
 
     pygame.draw.rect(screen, (40, 40, 40), (10, 10, 160, 36))
     screen.blit(font.render(f"Equipped: {hotbar[active_slot_index]}", True, (255, 255, 255)), (18, 18))
+    
+    # --- NEW: COORDINATE SYSTEM HUD ---
+    tile_x, tile_y = int(player_x // 32), int(player_y // 32)
+    coord_surface = font.render(f"Pos  X: {tile_x} | Y: {tile_y}", True, (255, 255, 255))
+    coord_rect = coord_surface.get_rect(topright=(SCREEN_WIDTH - 15, 15))
+    pygame.draw.rect(screen, (40, 40, 40), coord_rect.inflate(20, 10))
+    screen.blit(coord_surface, coord_rect)
+    
     inv_y = 55
     for item, count in inventory.items():
         screen.blit(font.render(f"{item.capitalize()}: {count}", True, (220, 220, 220)), (10, inv_y))
@@ -444,7 +451,9 @@ while running:
         animations()
     
     draw_world()
-    generate_world(100, 30)
+    
+    # generate_world(100, 30) <--- REMOVED! This was causing your world to regenerate over itself every single frame!
+    
     draw_player()
     draw_ui()
 
